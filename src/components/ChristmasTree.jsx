@@ -5,123 +5,90 @@ import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 export default function ChristmasTree() {
 
   const mountRef = useRef(null);
-  const initialized = useRef(false);
   const [activeImg, setActiveImg] = useState(null);
 
   useEffect(() => {
 
-    if (initialized.current) return;
-    initialized.current = true;
     if (!mountRef.current) return;
 
-    // ============================
-    // 📱 检测是否手机
-    // ============================
     const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
-
-    // ============================
-    // 场景
-    // ============================
-    const scene = new THREE.Scene();
 
     const width = mountRef.current.clientWidth;
     const height = mountRef.current.clientHeight;
 
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+    // ================= 场景 =================
+    const scene = new THREE.Scene();
 
-    // ============================
-    // 渲染器（关键优化）
-    // ============================
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
+    camera.position.set(0, 0, 18);
+
     const renderer = new THREE.WebGLRenderer({
-      antialias: !isMobile, // 手机关闭抗锯齿
-      alpha: true
+      alpha: true,
+      antialias: !isMobile
     });
 
-    // 手机必须限制像素比！！！
+    // 手机限制像素比（防炸）
     renderer.setPixelRatio(isMobile ? 1 : window.devicePixelRatio);
-
     renderer.setSize(width, height);
     mountRef.current.appendChild(renderer.domElement);
 
-    // ============================
-    // 控制器
-    // ============================
+    // ================= 控制器 =================
     const controls = new OrbitControls(camera, renderer.domElement);
 
-    if (isMobile) {
-      controls.enableDamping = false;
-      controls.enableZoom = false;
-      controls.enablePan = false;
-    } else {
-      controls.enableDamping = true;
-    }
+    controls.enableZoom = true;      // ✅ 允许缩放
+    controls.enablePan = false;      // ❌ 禁止平移
+    controls.zoomSpeed = isMobile ? 0.6 : 1.0;
+    controls.enableDamping = !isMobile;
+    controls.dampingFactor = 0.05;
+
+    // 限制缩放范围（非常重要）
+    controls.minDistance = 10;
+    controls.maxDistance = 30;
 
     scene.add(new THREE.AmbientLight(0xffffff, 1));
 
-    // ============================
-    // 树参数
-    // ============================
-    const treeHeight = 10;
-    const baseRadius = 4;
-    const topRadius = 0.5;
-
-    // 手机照片数量必须减少
-    const photoCount = isMobile ? 80 : 400;
-
+    // ================= 照片加载 =================
     const loader = new THREE.TextureLoader();
     const photoSprites = [];
 
-    let index = 1;
-    const batchSize = isMobile ? 5 : 20;
+    const photoCount = isMobile ? 50 : 200; // ❤️ 爱心不需要太多
 
-    function loadBatch() {
+    for (let i = 0; i < photoCount; i++) {
 
-      for (let i = 0; i < batchSize && index <= photoCount; i++, index++) {
+      const t = (i / photoCount) * Math.PI * 2;
 
-        const num = String(index).padStart(3, "0");
+      // ❤️ 心形公式
+      const x = 16 * Math.pow(Math.sin(t), 3);
+      const y =
+        13 * Math.cos(t) -
+        5 * Math.cos(2 * t) -
+        2 * Math.cos(3 * t) -
+        Math.cos(4 * t);
 
-        loader.load(`/photos/photo${num}.jpg`, (texture) => {
+      const texture = loader.load(
+        `/photos/photo${String(i + 1).padStart(3, "0")}.jpg`
+      );
 
-          // 限制纹理尺寸（关键）
-          texture.minFilter = THREE.LinearFilter;
-          texture.generateMipmaps = false;
+      // 性能优化
+      texture.minFilter = THREE.LinearFilter;
+      texture.generateMipmaps = false;
 
-          const material = new THREE.SpriteMaterial({ map: texture });
+      const sprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: texture })
+      );
 
-          const sprite = new THREE.Sprite(material);
+      sprite.position.set(x * 0.25, y * 0.25, (Math.random() - 0.5) * 2);
 
-          const t = Math.random();
-          const y = t * treeHeight;
+      const scale = isMobile ? 1.2 : 1.4;
+      sprite.scale.set(scale, scale, scale);
 
-          const r = baseRadius - (baseRadius - topRadius) * (y / treeHeight);
-          const theta = Math.random() * Math.PI * 2;
+      sprite.userData.pulse = Math.random() * Math.PI * 2;
 
-          sprite.position.set(
-            r * Math.cos(theta),
-            y - treeHeight / 2,
-            r * Math.sin(theta)
-          );
-
-          const scale = isMobile ? 0.9 : Math.random() * 0.6 + 0.8;
-          sprite.scale.set(scale, scale, scale);
-
-          sprite.userData.pulse = Math.random() * Math.PI * 2;
-
-          scene.add(sprite);
-          photoSprites.push(sprite);
-        });
-      }
-
-      if (index <= photoCount) {
-        setTimeout(loadBatch, isMobile ? 200 : 120);
-      }
+      photoSprites.push(sprite);
+      scene.add(sprite);
     }
 
-    loadBatch();
-
-    // ============================
-    // 点击检测
-    // ============================
+    // ================= 点击检测 =================
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -142,17 +109,15 @@ export default function ChristmasTree() {
 
     renderer.domElement.addEventListener("click", onClick);
 
-    camera.position.z = 12;
-
-    // ============================
-    // 动画（手机禁用呼吸动画）
-    // ============================
+    // ================= 动画 =================
     function animate() {
 
       requestAnimationFrame(animate);
 
-      scene.rotation.y += 0.001;
+      // ❤️ 整体慢慢旋转
+      scene.rotation.y += 0.002;
 
+      // ❤️ 呼吸效果（桌面才开）
       if (!isMobile) {
         photoSprites.forEach(sprite => {
           sprite.userData.pulse += 0.02;
@@ -167,11 +132,8 @@ export default function ChristmasTree() {
 
     animate();
 
-    // ============================
-    // Resize
-    // ============================
+    // ================= Resize =================
     const handleResize = () => {
-
       const w = mountRef.current.clientWidth;
       const h = mountRef.current.clientHeight;
 
@@ -186,12 +148,12 @@ export default function ChristmasTree() {
       window.removeEventListener("resize", handleResize);
       renderer.domElement.removeEventListener("click", onClick);
       controls.dispose();
-      scene.clear();
       renderer.dispose();
     };
 
   }, []);
 
+  // ================= JSX =================
   return (
     <>
       <div ref={mountRef} style={{ width: "100%", height: "70vh" }} />
@@ -214,7 +176,8 @@ export default function ChristmasTree() {
             style={{
               maxWidth: "80%",
               maxHeight: "80%",
-              borderRadius: "20px"
+              borderRadius: "20px",
+              boxShadow: "0 0 40px pink"
             }}
           />
         </div>
