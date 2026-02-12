@@ -29,7 +29,6 @@ export default function App() {
     "从 2019年12月18日 到今天，",
     "我最开心也最骄傲的事情，",
     "就是身边的人始终是你。",
-    "爱你 臭🐖"
   ];
 
   const next = () => setPage(p => p + 1);
@@ -49,7 +48,7 @@ export default function App() {
 
     const timer = setTimeout(() => {
       setLineIndex(i => i + 1);
-    }, 9000); // 每句话停留时间（可以改成 2200 / 3000）
+    }, 10000); // 每句话停留时间（可以改成 2200 / 3000）
 
     return () => clearTimeout(timer);
 
@@ -168,7 +167,7 @@ export default function App() {
           )}
 
           {showFinal && (
-            <MatrixText text="我会爱你很久很久" fontSize={60} />
+            <MatrixText text="我爱你" fontSize={60} />
           )}
         </Stage>
       )}
