@@ -10,7 +10,7 @@ export default function LoveMatrixBackground() {
     let width, height, columns;
     let drops = [];
 
-    const letters = "LOVEILOVEULUCIA❤0123456789";
+    const letters = "ILOVEULUCIA4EVER❤18122019";
     const fontSize = 16;
 
     function resize() {

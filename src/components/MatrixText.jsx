@@ -44,7 +44,7 @@ export default function MatrixText({ text, size = 60 }) {
             ty: y / DPR,
             x: Math.random() * width,
             y: Math.random() * height,
-            speed: Math.random() * 0.05 + 0.02,
+            speed: Math.random() * 0.10 + 0.05,
             glow: Math.random()
           });
         }
@@ -63,14 +63,18 @@ export default function MatrixText({ text, size = 60 }) {
       if (Math.random() < 0.02) {
         ctx.fillStyle = "#ff99cc";
         ctx.font = "8px monospace";
-        ctx.fillText("01LOVE"[Math.floor(Math.random()*6)], p.x, p.y);
+        ctx.fillText("01LOVE"[Math.floor(Math.random() * 6)], p.x, p.y);
       }
     }
 
     function animate() {
 
-      ctx.fillStyle = "rgba(0,0,0,0.2)";
-      ctx.fillRect(0, 0, width, height);
+      // ❌ 不再使用黑色覆盖
+      // ctx.fillStyle = "rgba(0,0,0,0.2)";
+      // ctx.fillRect(0, 0, width, height);
+
+      // ✅ 改成轻微透明擦除
+      ctx.clearRect(0, 0, width, height);
 
       particles.forEach(p => {
         p.x += (p.tx - p.x) * p.speed;
@@ -81,13 +85,14 @@ export default function MatrixText({ text, size = 60 }) {
       requestAnimationFrame(animate);
     }
 
+
     animate();
 
   }, [text, size]);
 
   return (
     <div className="matrixTextWrap">
-      <canvas ref={canvasRef}/>
+      <canvas ref={canvasRef} />
     </div>
   );
 }
